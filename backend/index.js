@@ -1,3 +1,5 @@
+const dns = require('dns');
+dns.setDefaultResultOrder('ipv4first');
 require("dotenv").config();
 const pool = require("./db");
 const express = require("express");
@@ -7,6 +9,8 @@ const taskRoutes = require("./routes/tasks");
 const authRoutes = require("./routes/auth");
 
 const app = express();
+
+
 
 app.use(cors({
   origin: process.env.CLIENT_URL,
@@ -315,12 +319,33 @@ app.delete("/api/workers/:id", async (req, res) => {
   }
 });
 
-
+app.get("/health", async (req, res) => {
+  try {
+    const result = await pool.query("SELECT NOW()");
+    res.json({
+      status: "OK",
+      db: "connected",
+      time: result.rows[0],
+    });
+  } catch (err) {
+    console.error("❌ Health check failed:", err.message);
+    res.status(500).json({
+      status: "ERROR",
+      db: "disconnected",
+      error: err.message,
+    });
+  }
+});
 
 
 
 const PORT = process.env.PORT || 5000;
 
+console.log("🚀 Starting server...");
+console.log("🌍 ENV:", process.env.NODE_ENV);
+console.log("🔗 CLIENT_URL:", process.env.CLIENT_URL);
+console.log("📦 PORT:", PORT);
+
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`✅ Server running on port ${PORT}`);
 });
